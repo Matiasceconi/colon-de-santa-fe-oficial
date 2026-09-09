@@ -1,0 +1,55 @@
+{
+  "name": "ScoutingFeedSquad",
+  "type": "object",
+  "properties": {
+    "organization_id": {
+      "type": "string"
+    },
+    "feed_key": {
+      "type": "string"
+    },
+    "team_id": {
+      "type": "number"
+    },
+    "team_name": {
+      "type": "string"
+    },
+    "players": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true
+      }
+    },
+    "observed_at": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "organization_id",
+    "feed_key",
+    "team_id"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}
