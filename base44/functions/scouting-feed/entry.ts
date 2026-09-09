@@ -208,7 +208,7 @@ export default async function(req:Request){
    if((state.catalog_pending||[]).length)throw fail("Terminá de registrar el catálogo pendiente con Reanudar.",409);
    await checkPlan(base44,db,state);await saveState(db,state,{status:"running",last_error:"",last_message:"Plan comprobado. Descubriendo competencias.",discover_requested:true});return Response.json({status:"running",plan:state.plan});
   }
-  if(action==="resume"){if(Date.parse(state.next_run_at||"")<=Date.now()&&(!state.checked_at||Date.now()-Date.parse(state.checked_at)>900000))await checkPlan(base44,db,state);await saveState(db,state,{status:"running",last_error:""});return Response.json({status:"running"});}
+  if(action==="resume"){if(!(Date.parse(state.next_run_at||"")>Date.now())&&(!state.checked_at||Date.now()-Date.parse(state.checked_at)>900000))await checkPlan(base44,db,state);await saveState(db,state,{status:"running",last_error:""});return Response.json({status:"running"});}
   if(action==="retry"){const job=await db.ScoutingFeedCompetition.get(String(body.competition_id));if(job.organization_id!==org)throw fail("Liga no encontrada.",404);if(!["error","restricted"].includes(job.status))throw fail("Esta liga no tiene un error pendiente.");await db.ScoutingFeedCompetition.update(job.id,{status:"queued",error:"",updated_at:nowISO()});await saveState(db,state,{status:"running",last_error:""});return Response.json({status:"running"});}
   if(action==="queue_season"){
    const source=await db.ScoutingFeedCompetition.get(String(body.competition_id));if(source.organization_id!==org)throw fail("Liga no encontrada.",404);
