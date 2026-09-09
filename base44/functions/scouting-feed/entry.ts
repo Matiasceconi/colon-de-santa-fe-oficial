@@ -27,9 +27,9 @@ async function requestApi(base44:any,db:any,state:any,endpoint:string,params:any
   if(sameDay&&q.daily_remaining!=null&&q.daily_remaining<=state.reserve_daily)throw fail("Importación pausada: se alcanzó la reserva diaria para otras funciones del club.",429,"daily_quota");
   if(Date.parse(state.next_run_at||"")>Date.now())throw fail("Esperando la recuperación del cupo por minuto.",429,"minute_quota");
  }
- let result:any;try{result=await callFootballApi(settings,endpoint,params);}catch(e:any){if(e.quota)await saveState(db,state,{quota:e.quota});if(e.code==="quota")e.code=e.quota?.daily_remaining!=null&&e.quota.daily_remaining<=state.reserve_daily?"daily_quota":"minute_quota";throw e;}
+ let result:any;try{result=await callFootballApi(settings,endpoint,params);}catch(e:any){if(e.quota)await saveState(db,state,{quota:{...q,...Object.fromEntries(Object.entries(e.quota).filter(([,v])=>v!==null&&v!==undefined))}});if(e.code==="quota")e.code=e.quota?.daily_remaining!=null&&e.quota.daily_remaining<=state.reserve_daily?"daily_quota":"minute_quota";throw e;}
  const quota={...(result.quota||{}),daily_limit:result.quota?.daily_limit??q.daily_limit??null,daily_remaining:result.quota?.daily_remaining??(sameDay&&q.daily_remaining!=null?Math.max(0,q.daily_remaining-1):null)},minute=numeric(quota.minute_remaining),limit=numeric(quota.minute_limit);
- const next=new Date(Date.now()+(minute!==null&&minute<=1?65000:Math.max(1200,limit?Math.ceil(60000/limit):2000))).toISOString();
+ const next=new Date(Date.now()+(minute!==null&&minute<=1?65000:Math.max(2500,limit?Math.ceil(120000/limit):4000))).toISOString();
  await saveState(db,state,{quota,requests_made:Number(state.requests_made||0)+1,next_run_at:next});return result.data;
 }
 async function checkPlan(base44:any,db:any,state:any){
@@ -66,18 +66,51 @@ async function storeRoster(db:any,org:string,player:any,job:any,team:any,observe
  const p=await storePlayer(db,org,player,job,false,team);
  await upsert(db.ScoutingFeedEntry,org,"roster:"+team.id+":"+p.provider_id,{player_id:p.id,provider_player_id:p.provider_id,team_id:team.id,team_name:team.name||"",team_logo:team.logo||"",country:job.country,source_kind:"current_roster",position:player.position||"",observed_at:observedAt,statistics:{shirt_number:player.number??null}});
 }
+async function storeFeedBatch(db:any,org:string,job:any,pending:any,rows:any[]){
+ const detailed=pending.kind==="stats",ids=unique(rows.map((r:any)=>Number(detailed?r.player?.id:r.id)));
+ const existing=await db.ScoutingFeedPlayer.filter({organization_id:org,provider_id:{$in:ids}},"id",500);
+ const known=new Map(existing.map((p:any)=>[p.provider_id,p])),patches=new Map<number,any>();
+ const statistics=(r:any)=>(r.statistics||[]).filter((s:any)=>Number(s.league?.id)===job.league_id&&Number(s.league?.season)===job.season);
+ for(const row of rows){
+  const player=detailed?row.player:row,old:any=known.get(Number(player.id)),prior=patches.get(Number(player.id)),base={...old,...prior},patch=profilePatch(player,detailed),stats=detailed?statistics(row):[];
+  if(base.profile_observed_at&&!detailed){delete patch.full_name;delete patch.normalized_name;}
+  if(!patch.position&&stats[0]?.games?.position)patch.position=stats[0].games.position;
+  patches.set(Number(player.id),{...prior,...patch,competition_keys:unique([...(base.competition_keys||[]),job.feed_key]),countries:unique([...(base.countries||[]),job.country]),team_names:unique([...(base.team_names||[]),...(detailed?stats.map((s:any)=>s.team?.name):[pending.team?.name])])});
+ }
+ const create:any[]=[],update:any[]=[];
+ for(const [id,p] of patches){const old:any=known.get(id);if(old)update.push({id:old.id,...p});else create.push({...p,organization_id:org,feed_key:String(id)});}
+ if(create.length){const created=await db.ScoutingFeedPlayer.bulkCreate(create);for(const p of created)known.set(p.provider_id,p);}
+ if(update.length)await db.ScoutingFeedPlayer.bulkUpdate(update);
+ const entries=new Map<string,any>();
+ for(const row of rows){
+  const source=detailed?row.player:row,player:any=known.get(Number(source.id));if(!player)throw fail("No se pudo guardar una ficha del lote.",502);
+  if(detailed){for(const s of statistics(row)){
+   const teamId=numeric(s.team?.id);if(teamId===null)continue;
+   const key="stats:"+job.feed_key+":"+teamId+":"+player.provider_id;
+   entries.set(key,{organization_id:org,feed_key:key,player_id:player.id,provider_player_id:player.provider_id,league_id:job.league_id,competition_key:job.feed_key,competition_name:job.name,country:job.country,season:job.season,team_id:teamId,team_name:s.team?.name||"",team_logo:s.team?.logo||"",position:s.games?.position||"",source_kind:"season_statistics",minutes:numeric(s.games?.minutes),appearances:numeric(s.games?.appearences??s.games?.appearances),statistics:s,observed_at:nowISO()});
+  }}else{
+   const team=pending.team,key="roster:"+team.id+":"+player.provider_id;
+   entries.set(key,{organization_id:org,feed_key:key,player_id:player.id,provider_player_id:player.provider_id,team_id:team.id,team_name:team.name||"",team_logo:team.logo||"",country:job.country,source_kind:"current_roster",position:source.position||"",observed_at:pending.observed_at,statistics:{shirt_number:source.number??null}});
+  }
+ }
+ if(entries.size){
+  const old=await db.ScoutingFeedEntry.filter({organization_id:org,feed_key:{$in:[...entries.keys()]}},"id",500),byKey=new Map(old.map((e:any)=>[e.feed_key,e])),creates:any[]=[],updates:any[]=[];
+  for(const [key,payload] of entries){const prior:any=byKey.get(key);if(prior)updates.push({id:prior.id,...payload});else creates.push(payload);}
+  if(creates.length)await db.ScoutingFeedEntry.bulkCreate(creates);
+  if(updates.length)await db.ScoutingFeedEntry.bulkUpdate(updates);
+ }
+}
+
 const addWarning=(job:any,message:string)=>unique([...(job.warnings||[]),message]);
 async function processJob(base44:any,db:any,state:any,org:string,job:any){
  const update=async(patch:any)=>{job=await db.ScoutingFeedCompetition.update(job.id,{...patch,updated_at:nowISO()});};
  await saveState(db,state,{last_message:job.country+" · "+job.name+" · "+job.season});
  if(job.pending?.rows){
-  const pending=job.pending,rows=pending.rows,start=Number(pending.cursor||0),end=Math.min(rows.length,start+6);
-  for(let i=start;i<end;i++){
-   await heartbeat(db,state);
-   if(pending.kind==="stats")await storeStat(db,org,rows[i],job);else await storeRoster(db,org,rows[i],job,pending.team,pending.observed_at);
-   pending.cursor=i+1;
-   await update({pending:{...pending},records_processed:Number(job.records_processed||0)+(pending.kind==="stats"?1:0),roster_processed:Number(job.roster_processed||0)+(pending.kind==="roster"?1:0)});
-  }
+  const pending=job.pending,rows=pending.rows,start=Number(pending.cursor||0),end=Math.min(rows.length,start+20);
+  await heartbeat(db,state);
+  await storeFeedBatch(db,org,job,pending,rows.slice(start,end));
+  pending.cursor=end;
+  await update({pending:{...pending},records_processed:Number(job.records_processed||0)+(pending.kind==="stats"?end-start:0),roster_processed:Number(job.roster_processed||0)+(pending.kind==="roster"?end-start:0)});
   if(pending.cursor>=rows.length){
    if(pending.kind==="stats")await update({pending:{},page:Number(job.page||1)+1,phase:Number(job.page||1)>=Number(job.total_pages||1)?"roster":"statistics"});
    else await update({pending:{},team_index:Number(job.team_index||0)+1});
@@ -175,7 +208,7 @@ export default async function(req:Request){
    if((state.catalog_pending||[]).length)throw fail("Terminá de registrar el catálogo pendiente con Reanudar.",409);
    await checkPlan(base44,db,state);await saveState(db,state,{status:"running",last_error:"",last_message:"Plan comprobado. Descubriendo competencias.",discover_requested:true});return Response.json({status:"running",plan:state.plan});
   }
-  if(action==="resume"){await checkPlan(base44,db,state);await saveState(db,state,{status:"running",last_error:""});return Response.json({status:"running"});}
+  if(action==="resume"){if(Date.parse(state.next_run_at||"")<=Date.now()&&(!state.checked_at||Date.now()-Date.parse(state.checked_at)>900000))await checkPlan(base44,db,state);await saveState(db,state,{status:"running",last_error:""});return Response.json({status:"running"});}
   if(action==="retry"){const job=await db.ScoutingFeedCompetition.get(String(body.competition_id));if(job.organization_id!==org)throw fail("Liga no encontrada.",404);if(!["error","restricted"].includes(job.status))throw fail("Esta liga no tiene un error pendiente.");await db.ScoutingFeedCompetition.update(job.id,{status:"queued",error:"",updated_at:nowISO()});await saveState(db,state,{status:"running",last_error:""});return Response.json({status:"running"});}
   if(action==="queue_season"){
    const source=await db.ScoutingFeedCompetition.get(String(body.competition_id));if(source.organization_id!==org)throw fail("Liga no encontrada.",404);
