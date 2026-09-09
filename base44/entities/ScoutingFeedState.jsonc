@@ -1,0 +1,92 @@
+{
+  "name": "ScoutingFeedState",
+  "type": "object",
+  "properties": {
+    "organization_id": {
+      "type": "string"
+    },
+    "feed_key": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string"
+    },
+    "lease_token": {
+      "type": "string"
+    },
+    "lease_until": {
+      "type": "string"
+    },
+    "quota": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "plan": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "checked_at": {
+      "type": "string"
+    },
+    "catalog_pending": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true
+      }
+    },
+    "catalog_cursor": {
+      "type": "number"
+    },
+    "countries": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "discovered_at": {
+      "type": "string"
+    },
+    "last_message": {
+      "type": "string"
+    },
+    "last_error": {
+      "type": "string"
+    },
+    "next_run_at": {
+      "type": "string"
+    },
+    "requests_made": {
+      "type": "number"
+    },
+    "reserve_daily": {
+      "type": "number"
+    }
+  },
+  "required": [
+    "organization_id",
+    "feed_key"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}
