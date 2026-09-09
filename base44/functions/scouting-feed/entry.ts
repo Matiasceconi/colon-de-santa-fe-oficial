@@ -91,7 +91,7 @@ async function processJob(base44:any,db:any,state:any,org:string,job:any){
   const data=await requestApi(base44,db,state,"/players",{league:job.league_id,season:job.season,page:job.page||1});
   if(!Array.isArray(data.response))throw fail("Respuesta de jugadores inválida.",502,"provider");
   const current=Number(data.paging?.current),total=Number(data.paging?.total);
-  if(!Number.isInteger(total)||total<1||current!==Number(job.page||1))throw fail("Paginación de jugadores inválida; el cursor se conservó.",502,"provider");
+  if(!Number.isInteger(total)||total<0||(data.response.length>0&&total<1)||current!==Number(job.page||1))throw fail("Paginación de jugadores inválida; el cursor se conservó.",502,"provider");
   await update({total_pages:total,pending:data.response.length?{kind:"stats",rows:data.response,cursor:0}:{},phase:data.response.length?"statistics":"roster",warnings:data.response.length?job.warnings||[]:addWarning(job,"Sin estadísticas individuales devueltas por la API.")});return;
  }
  if(job.phase==="roster"){
@@ -138,7 +138,7 @@ async function step(base44:any,db:any,state:any,org:string){
 async function promote(db:any,org:string,id:string,user:any){
  const p=await db.ScoutingFeedPlayer.get(id);if(p.organization_id!==org)throw fail("Jugador no encontrado.",404);
  if(p.prospect_id){const old=await db.ScoutingProspect.get(p.prospect_id);if(old?.organization_id===org)return{prospect:old};}
- const old=await one(db.ScoutingProspect,{organization_id:org,"external_ids.api_football":String(p.provider_id)});
+ const old=await one(db.ScoutingProspect,{organization_id:org,"external_ids.api_football":{$in:[String(p.provider_id),p.provider_id]}});
  if(old){await db.ScoutingFeedPlayer.update(p.id,{prospect_id:old.id});return{prospect:old};}
  const key="api-football:"+p.provider_id,existing=await one(db.ScoutingProspect,{organization_id:org,prospect_key:key});
  if(existing){await db.ScoutingFeedPlayer.update(p.id,{prospect_id:existing.id});return{prospect:existing};}
