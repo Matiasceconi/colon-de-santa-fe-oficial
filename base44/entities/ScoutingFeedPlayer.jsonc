@@ -1,0 +1,106 @@
+{
+  "name": "ScoutingFeedPlayer",
+  "type": "object",
+  "properties": {
+    "organization_id": {
+      "type": "string"
+    },
+    "feed_key": {
+      "type": "string"
+    },
+    "provider_id": {
+      "type": "number"
+    },
+    "full_name": {
+      "type": "string"
+    },
+    "normalized_name": {
+      "type": "string"
+    },
+    "first_name": {
+      "type": "string"
+    },
+    "last_name": {
+      "type": "string"
+    },
+    "birth_date": {
+      "type": "string"
+    },
+    "nationality": {
+      "type": "string"
+    },
+    "height_cm": {
+      "type": "number"
+    },
+    "weight_kg": {
+      "type": "number"
+    },
+    "photo_url": {
+      "type": "string"
+    },
+    "position": {
+      "type": "string"
+    },
+    "reported_age": {
+      "type": "number"
+    },
+    "age_observed_at": {
+      "type": "string"
+    },
+    "competition_keys": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "countries": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "team_names": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "observed_at": {
+      "type": "string"
+    },
+    "profile_observed_at": {
+      "type": "string"
+    },
+    "prospect_id": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "organization_id",
+    "feed_key",
+    "provider_id",
+    "full_name"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}
