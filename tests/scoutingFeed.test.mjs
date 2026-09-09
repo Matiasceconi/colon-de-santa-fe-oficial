@@ -33,7 +33,7 @@ function entity(name){
   async create(payload){const r={...clone(payload),id:"id"+String(++sequence).padStart(6,"0"),created_date:new Clock().toISOString()};tables[name].push(r);return clone(r);},
   async update(id,patch){const r=tables[name].find(x=>x.id===id);assert(r);Object.assign(r,clone(patch));return clone(r);},
   async bulkCreate(rows){return Promise.all(rows.map(r=>this.create(r)));},
-  async bulkUpdate(rows){return Promise.all(rows.map(r=>this.update(r.id,r.data)));},
+  async bulkUpdate(rows){return Promise.all(rows.map(r=>this.update(r.id,Object.fromEntries(Object.entries(r).filter(([k])=>k!=="id")))));},
   async updateMany(q,changes){let n=0;for(const r of tables[name])if(matches(r,q)){if(changes.$set)Object.assign(r,clone(changes.$set));n++;}return{success:true,updated:n};}
  };
 }
