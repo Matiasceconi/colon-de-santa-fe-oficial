@@ -21,13 +21,14 @@ async function heartbeat(db:any,state:any){const live=await db.ScoutingFeedState
 async function saveState(db:any,state:any,patch:any){await db.ScoutingFeedState.updateMany({id:state.id,lease_token:state.token},{$set:patch});Object.assign(state,patch);}
 async function requestApi(base44:any,db:any,state:any,endpoint:string,params:any={}){
  const settings=await settingsFor(base44);if(!settings)throw fail("API-Football no está configurada en esta aplicación. Guardá la clave en Conectar API.",412,"missing_key");
+ if(endpoint!=="/status"&&String(state.quota?.observed_at||"").slice(0,10)!==nowISO().slice(0,10))await checkPlan(base44,db,state);
  const q=state.quota||{},sameDay=String(q.observed_at||"").slice(0,10)===nowISO().slice(0,10);
  if(endpoint!=="/status"){
   if(sameDay&&q.daily_remaining!=null&&q.daily_remaining<=state.reserve_daily)throw fail("Importación pausada: se alcanzó la reserva diaria para otras funciones del club.",429,"daily_quota");
   if(Date.parse(state.next_run_at||"")>Date.now())throw fail("Esperando la recuperación del cupo por minuto.",429,"minute_quota");
  }
  let result:any;try{result=await callFootballApi(settings,endpoint,params);}catch(e:any){if(e.quota)await saveState(db,state,{quota:e.quota});if(e.code==="quota")e.code=e.quota?.daily_remaining!=null&&e.quota.daily_remaining<=state.reserve_daily?"daily_quota":"minute_quota";throw e;}
- const quota=result.quota||{},minute=numeric(quota.minute_remaining),limit=numeric(quota.minute_limit);
+ const quota={...(result.quota||{}),daily_limit:result.quota?.daily_limit??q.daily_limit??null,daily_remaining:result.quota?.daily_remaining??(sameDay&&q.daily_remaining!=null?Math.max(0,q.daily_remaining-1):null)},minute=numeric(quota.minute_remaining),limit=numeric(quota.minute_limit);
  const next=new Date(Date.now()+(minute!==null&&minute<=1?65000:Math.max(1200,limit?Math.ceil(60000/limit):2000))).toISOString();
  await saveState(db,state,{quota,requests_made:Number(state.requests_made||0)+1,next_run_at:next});return result.data;
 }
@@ -36,6 +37,7 @@ async function checkPlan(base44:any,db:any,state:any){
  if(sub.active===false)throw fail("La suscripción de API-Football no está activa.",412,"plan");
  const limit=numeric(req.limit_day)??state.quota?.daily_limit,used=numeric(req.current);
  const quota={...state.quota,daily_limit:limit,daily_remaining:limit!=null&&used!==null?Math.max(0,limit-used):state.quota?.daily_remaining,observed_at:nowISO()};
+ if(!limit||quota.daily_remaining==null)throw fail("El proveedor no informó un cupo verificable. Revisá la conexión antes de importar.",412,"quota_unknown");
  await saveState(db,state,{plan:{name:sub.plan||"Sin nombre informado",active:sub.active??null,end:sub.end||null},quota,checked_at:nowISO(),reserve_daily:limit?Math.min(100,Math.max(5,Math.ceil(limit*.1))):10});
 }
 function publicJob(j:any){const{pending,teams,available_seasons,...out}=j;return{...out,team_count:(teams||[]).length,available_seasons:(available_seasons||[]).map((s:any)=>Number(s.year)),pending_records:Math.max(0,(pending?.rows?.length||0)-(pending?.cursor||0))};}
@@ -157,7 +159,7 @@ export default async function(req:Request){
   if(action==="players"){
    const query:any={organization_id:org},search=normalize(body.search).slice(0,100);
    if(search)query.normalized_name={$regex:search.replace(/[.*+?^{}$()|[\]\\]/g,"\\$&")};
-   if(body.country&&SOUTH_AMERICA.includes(body.country))query.countries={$in:[body.country]};
+   if(body.country&&SOUTH_AMERICA.includes(body.country))query.countries={$in:body.country==="French-Guiana"?["French-Guiana","French Guiana"]:[body.country]};
    if(body.competition_key)query.competition_keys={$in:[String(body.competition_key).slice(0,80)]};
    if(body.position)query.position=String(body.position).slice(0,80);
    if(body.nationality)query.nationality=String(body.nationality).slice(0,100);
