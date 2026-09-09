@@ -3,7 +3,7 @@ import { base44 } from "@/api/base44Client";
 import { Database, Globe2, Search, RefreshCw, Play, Pause, Loader2, KeyRound, CheckCircle2, AlertTriangle, ChevronLeft, ChevronRight, UserPlus } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 const control="rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-100 disabled:opacity-40";
-const labels={queued:"Pendiente",running:"En curso",completed:"Recorrido completo",empty:"Sin jugadores",restricted:"Restricción del plan",error:"Revisar",paused:"Pausada",paused_quota:"Reserva diaria alcanzada",complete:"Recorrido finalizado",idle:"Sin iniciar"};
+const labels={queued:"Pendiente",running:"En curso",completed:"Recorrido completo",empty:"Sin jugadores",restricted:"Restricción del plan",error:"Revisar",paused:"Pausada",paused_quota:"Pausada por cupo diario",complete:"Recorrido finalizado",idle:"Sin iniciar"};
 const positions={Goalkeeper:"Arquero",Defender:"Defensor",Midfielder:"Mediocampista",Attacker:"Delantero"};
 const countries={Argentina:"Argentina",Bolivia:"Bolivia",Brazil:"Brasil",Chile:"Chile",Colombia:"Colombia",Ecuador:"Ecuador",Paraguay:"Paraguay",Peru:"Perú",Uruguay:"Uruguay",Venezuela:"Venezuela",Guyana:"Guyana",Suriname:"Surinam","French-Guiana":"Guayana Francesa","French Guiana":"Guayana Francesa"};
 const date=v=>v?new Date(v).toLocaleString("es-AR"):"Sin fecha";
