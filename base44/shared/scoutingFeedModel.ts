@@ -27,7 +27,7 @@ export function profilePatch(player: any, detailed: boolean) {
 export function classifyProviderError(status: number, errors: any) {
  const text=JSON.stringify(errors||{}).toLowerCase();
  if(status===401||status===403||/token|api.?key|authentication/.test(text))return "credentials";
- if(status===429||/rate.?limit|too many|requests limit/.test(text))return "quota";
+ if(status===429||/rate.?limit|too many|requests? limit|request.*limit|limit.*request/.test(text))return "quota";
  if(/plan|subscription|season.*access|access.*season/.test(text))return "plan";
  return status>=500?"transient":"provider";
 }
