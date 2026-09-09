@@ -2,6 +2,9 @@
   "name": "ScoutingFeedState",
   "type": "object",
   "properties": {
+    "discover_requested": {
+      "type": "boolean"
+    },
     "organization_id": {
       "type": "string"
     },
