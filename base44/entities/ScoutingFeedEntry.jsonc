@@ -1,0 +1,89 @@
+{
+  "name": "ScoutingFeedEntry",
+  "type": "object",
+  "properties": {
+    "organization_id": {
+      "type": "string"
+    },
+    "feed_key": {
+      "type": "string"
+    },
+    "provider_player_id": {
+      "type": "number"
+    },
+    "player_id": {
+      "type": "string"
+    },
+    "league_id": {
+      "type": "number"
+    },
+    "competition_key": {
+      "type": "string"
+    },
+    "competition_name": {
+      "type": "string"
+    },
+    "country": {
+      "type": "string"
+    },
+    "season": {
+      "type": "number"
+    },
+    "team_id": {
+      "type": "number"
+    },
+    "team_name": {
+      "type": "string"
+    },
+    "team_logo": {
+      "type": "string"
+    },
+    "position": {
+      "type": "string"
+    },
+    "source_kind": {
+      "type": "string"
+    },
+    "minutes": {
+      "type": "number"
+    },
+    "appearances": {
+      "type": "number"
+    },
+    "statistics": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "observed_at": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "organization_id",
+    "feed_key",
+    "provider_player_id",
+    "source_kind"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}
