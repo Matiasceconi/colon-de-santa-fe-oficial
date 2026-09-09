@@ -1,0 +1,125 @@
+{
+  "name": "ScoutingFeedCompetition",
+  "type": "object",
+  "properties": {
+    "organization_id": {
+      "type": "string"
+    },
+    "feed_key": {
+      "type": "string"
+    },
+    "league_id": {
+      "type": "number"
+    },
+    "name": {
+      "type": "string"
+    },
+    "country": {
+      "type": "string"
+    },
+    "logo": {
+      "type": "string"
+    },
+    "type": {
+      "type": "string"
+    },
+    "season": {
+      "type": "number"
+    },
+    "is_current": {
+      "type": "boolean"
+    },
+    "start_date": {
+      "type": "string"
+    },
+    "end_date": {
+      "type": "string"
+    },
+    "available_seasons": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true
+      }
+    },
+    "coverage": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "status": {
+      "type": "string"
+    },
+    "phase": {
+      "type": "string"
+    },
+    "teams": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true
+      }
+    },
+    "team_index": {
+      "type": "number"
+    },
+    "page": {
+      "type": "number"
+    },
+    "total_pages": {
+      "type": "number"
+    },
+    "pending": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "records_processed": {
+      "type": "number"
+    },
+    "roster_processed": {
+      "type": "number"
+    },
+    "error": {
+      "type": "string"
+    },
+    "warnings": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "updated_at": {
+      "type": "string"
+    },
+    "completed_at": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "organization_id",
+    "feed_key",
+    "league_id",
+    "season"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}
