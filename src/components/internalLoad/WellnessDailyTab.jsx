@@ -50,6 +50,13 @@ function scoreTextClass(colorKey) {
   return 'text-zinc-500';
 }
 
+const ALERT_COLOR = {
+  verde: 'green',
+  amarillo: 'yellow',
+  naranja: 'orange',
+  rojo: 'red',
+};
+
 export default function WellnessDailyTab({ wellness, players, date, onDateChange }) {
   const [search, setSearch] = useState('');
   const [filterAlert, setFilterAlert] = useState('Todos');
@@ -213,7 +220,7 @@ export default function WellnessDailyTab({ wellness, players, date, onDateChange
                   <td className="p-3 text-center text-zinc-500 text-xs border-b border-zinc-800">{w?.submitted_at ? new Date(w.submitted_at).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' }) : '-'}</td>
                   <td className="p-3 text-center border-b border-zinc-800">
                     {w ? (
-                      <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-semibold ${PILL_CLASSES[scaleColor(w.wellness_score)]}`}>
+                      <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-semibold ${PILL_CLASSES[ALERT_COLOR[w.alert_level] || 'gray']}`}>
                         {w.alert_level === 'rojo' ? 'Roja' : w.alert_level === 'naranja' ? 'Naranja' : w.alert_level === 'amarillo' ? 'Amar.' : 'Verde'}
                       </span>
                     ) : <span className="text-xs text-zinc-600">Pendiente</span>}
